@@ -1,0 +1,45 @@
+▶ Building Stats (Release)...
+⚠️  xcpretty not found, using raw output...
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /Users/kenfasano/Xcode/Stats/Stats.xcodeproj -scheme Stats -configuration Release -derivedDataPath /Users/kenfasano/Xcode/Stats/build -arch arm64 CODE_SIGN_IDENTITY= CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+
+Build settings from command line:
+    ARCHS = arm64
+    CODE_SIGN_IDENTITY = 
+    CODE_SIGNING_ALLOWED = NO
+    CODE_SIGNING_REQUIRED = NO
+
+note: Using codesigning identity override: 
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'Stats' in project 'Stats' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: eb28ff1db8a67886fb3b40c307a5ac29
+Build description path: /Users/kenfasano/Xcode/Stats/build/Build/Intermediates.noindex/XCBuildData/eb28ff1db8a67886fb3b40c307a5ac29.xcbuilddata
+error: Multiple commands produce '/Users/kenfasano/Xcode/Stats/build/Build/Products/Release/Stats.app/Contents/Resources/Info.plist'
+    note: Target 'Stats' (project 'Stats') has copy command from '/Users/kenfasano/Xcode/Stats/Info.plist' to '/Users/kenfasano/Xcode/Stats/build/Build/Products/Release/Stats.app/Contents/Resources/Info.plist'
+    note: Target 'Stats' (project 'Stats') has copy command from '/Users/kenfasano/Xcode/Stats/Stats/Info.plist' to '/Users/kenfasano/Xcode/Stats/build/Build/Products/Release/Stats.app/Contents/Resources/Info.plist'
+warning: duplicate output file '/Users/kenfasano/Xcode/Stats/build/Build/Products/Release/Stats.app/Contents/Resources/Info.plist' on task: CopyPlistFile /Users/kenfasano/Xcode/Stats/build/Build/Products/Release/Stats.app/Contents/Resources/Info.plist /Users/kenfasano/Xcode/Stats/Stats/Info.plist (in target 'Stats' from project 'Stats')
