@@ -61,8 +61,9 @@ class ScreenArtMonitor: ObservableObject {
                                 .replacingOccurrences(of: "✗", with: "")
                                 .trimmingCharacters(in: .whitespaces)
             
-            var attributedLine = AttributedString(cleanText)
-            
+            let displayText = index == 0 ? cleanText + (isOk ? " ✓" : " ✗") : cleanText
+            var attributedLine = AttributedString(displayText)
+
             // Apply standard label color (.primary) if OK, otherwise make it Red
             attributedLine.foregroundColor = isOk ? .black : .red
             
