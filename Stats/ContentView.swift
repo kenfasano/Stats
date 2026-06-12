@@ -155,13 +155,6 @@ struct ContentView: View {
                                 Spacer()
                                 Text(diskMonitor.uptime).font(kMonoFont)
                             }
-                            HStack {
-                                Label("Wi-Fi Info", systemImage: "wifi")
-                                    .font(kCaptionFont).foregroundStyle(.primary)
-                                Spacer()
-                                Text("\(networkMonitor.wifiRSSI)dBm / \(Int(networkMonitor.wifiTransmitRate))Mbps")
-                                    .font(kMonoFont).foregroundStyle(.primary)
-                            }
                         }
 
                         Spacer(minLength: 0)
@@ -179,6 +172,7 @@ struct ContentView: View {
                             .multilineTextAlignment(.leading)
                     }
                     .frame(height: 340)   // match System & Network height
+                    .foregroundStyle(.primary)
                 }
             }
             .padding()

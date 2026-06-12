@@ -65,7 +65,7 @@ class ScreenArtMonitor: ObservableObject {
             var attributedLine = AttributedString(displayText)
 
             // Apply standard label color (.primary) if OK, otherwise make it Red
-            attributedLine.foregroundColor = isOk ? .black : .red
+            attributedLine.foregroundColor = isOk ? .primary : .red
             
             result.append(attributedLine)
             
