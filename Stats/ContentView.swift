@@ -137,7 +137,7 @@ struct ContentView: View {
                             Label("Wi-Fi Status", systemImage: "wifi")
                                 .font(kCaptionFont).foregroundStyle(.primary)
                             Spacer()
-                            Text("On (\(networkMonitor.wifiRSSI)dBm / \(Int(networkMonitor.wifiTransmitRate))Mbps)")
+                            Text("On (\(networkMonitor.wifiRSSI)dBm \(wifiQuality(rssi: networkMonitor.wifiRSSI)) / \(Int(networkMonitor.wifiTransmitRate).formatted())Mbps)")
                                 .font(kMonoFont)
                                 .foregroundStyle(.primary)
                         }
@@ -228,6 +228,15 @@ struct ContentView: View {
             return f
         }()
 
+        var coverageLabel: String {
+            let elapsed = Int(min(Date().timeIntervalSince(monitor.startTime), 3600))
+            if elapsed >= 3600 { return "Last 1h" }
+            let mins = elapsed / 60
+            let secs = elapsed % 60
+            if mins >= 1 { return "Last \(mins)m" }
+            return "Last \(secs)s"
+        }
+
         var body: some View {
             MetricCard(title: "Network", value: 0, unit: "", color: .clear) {
                 VStack(spacing: 0) {
@@ -252,6 +261,17 @@ struct ContentView: View {
                         }
                         .chartXAxis(.hidden).chartYAxis(.hidden)
                         .frame(height: 50)
+
+                        HStack {
+                            Text("Total: \(formatter.string(fromByteCount: Int64(monitor.totalBytesDownloaded)))")
+                            Spacer()
+                            Text("\(coverageLabel): \(formatter.string(fromByteCount: Int64(monitor.hourlyBytesDownloaded)))")
+                        }
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        .padding(.horizontal)
+                        .padding(.bottom, 4)
                     }
 
                     Divider().padding(.vertical, 4)
@@ -276,6 +296,16 @@ struct ContentView: View {
                         }
                         .chartXAxis(.hidden).chartYAxis(.hidden)
                         .frame(height: 50)
+
+                        HStack {
+                            Text("Total: \(formatter.string(fromByteCount: Int64(monitor.totalBytesUploaded)))")
+                            Spacer()
+                            Text("\(coverageLabel): \(formatter.string(fromByteCount: Int64(monitor.hourlyBytesUploaded)))")
+                        }
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        .padding(.horizontal)
                         .padding(.bottom, 12)
                     }
                 }
@@ -299,6 +329,16 @@ struct ContentView: View {
         if value > 0.8 { return .red }
         else if value > 0.5 { return .orange }
         else { return .green }
+    }
+
+    func wifiQuality(rssi: Int) -> String {
+        switch rssi {
+        case -50...0:   return "Excellent"
+        case -67 ..< -50: return "Good"
+        case -80 ..< -67: return "Fair"
+        case -90 ..< -80: return "Poor"
+        default:           return "Unusable"
+        }
     }
 }
 

@@ -20,9 +20,22 @@ class NetworkMonitor: ObservableObject {
     @Published var wifiTransmitRate: Double = 0.0
     @Published var localIP: String = "127.0.0.1"
     
+    // UI Observed Properties – totals
+    @Published var totalBytesDownloaded: Double = 0.0
+    @Published var totalBytesUploaded: Double = 0.0
+    @Published var hourlyBytesDownloaded: Double = 0.0
+    @Published var hourlyBytesUploaded: Double = 0.0
+
+    let startTime = Date()
+
     private var lastTotalBytesIn: UInt64 = 0
     private var lastTotalBytesOut: UInt64 = 0
     private var timer: Timer?
+
+    // Rolling 1-hour window (one entry per second, up to 3600)
+    private var hourlyBuffer: [(down: Double, up: Double)] = []
+    private var hourlyWindowDown: Double = 0.0
+    private var hourlyWindowUp: Double = 0.0
     
     struct NetworkPoint: Identifiable {
         let id = UUID()
@@ -103,6 +116,21 @@ class NetworkMonitor: ObservableObject {
     private func addToHistory(down: Double, up: Double) {
         if history.count >= 60 { history.removeFirst() }
         history.append(NetworkPoint(timestamp: Date(), download: down, upload: up))
+
+        totalBytesDownloaded += down
+        totalBytesUploaded += up
+
+        hourlyWindowDown += down
+        hourlyWindowUp += up
+        hourlyBuffer.append((down: down, up: up))
+        if hourlyBuffer.count > 3600 {
+            let removed = hourlyBuffer.removeFirst()
+            hourlyWindowDown -= removed.down
+            hourlyWindowUp -= removed.up
+        }
+
+        hourlyBytesDownloaded = hourlyWindowDown
+        hourlyBytesUploaded = hourlyWindowUp
     }
     
     private func updateLocalIP() {
