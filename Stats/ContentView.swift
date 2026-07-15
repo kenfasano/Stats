@@ -137,7 +137,7 @@ struct ContentView: View {
                             Label("Wi-Fi Status", systemImage: "wifi")
                                 .font(kCaptionFont).foregroundStyle(.primary)
                             Spacer()
-                            Text("On (\(networkMonitor.wifiRSSI)dBm \(wifiQuality(rssi: networkMonitor.wifiRSSI)) / \(Int(networkMonitor.wifiTransmitRate).formatted())Mbps)")
+                            Text("On (\(networkMonitor.wifiRSSI)dBm: \(wifiQuality(rssi: networkMonitor.wifiRSSI)) @ \(Int(networkMonitor.wifiTransmitRate).formatted())Mbps)")
                                 .font(kMonoFont)
                                 .foregroundStyle(.primary)
                         }
