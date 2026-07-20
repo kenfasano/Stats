@@ -17,6 +17,8 @@ struct ContentView: View {
     @StateObject private var screenArtMonitor = ScreenArtMonitor()
     @StateObject private var claudeMonitor  = ClaudeMonitor()   // ← new
 
+    @State private var showDeleteBackgroundDBConfirmation = false
+
     var body: some View {
         VStack(spacing: 20) {
 
@@ -155,11 +157,30 @@ struct ContentView: View {
                                 Spacer()
                                 Text(diskMonitor.uptime).font(kMonoFont)
                             }
+                            VStack(alignment: .trailing, spacing: 4) {
+                                HStack {
+                                    Label("BackgroundProcessing DB", systemImage: "cylinder.split.1x2")
+                                        .font(kCaptionFont).foregroundStyle(.primary)
+                                    Spacer()
+                                    Text(diskMonitor.backgroundDBSizeString).font(kMonoFont)
+                                }
+                                Button(role: .destructive) {
+                                    showDeleteBackgroundDBConfirmation = true
+                                } label: {
+                                    Text("Delete File")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .padding(.horizontal, 4)
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(.red)
+                                .controlSize(.large)
+                                .offset(x: 6, y: 8)
+                            }
                         }
 
                         Spacer(minLength: 0)
                     }
-                    .frame(height: 340)   // slightly taller to fit Claude rows
+                    .frame(height: 375)   // slightly taller to fit Claude rows
                     .foregroundStyle(.primary)
                 }
 
@@ -171,11 +192,27 @@ struct ContentView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .multilineTextAlignment(.leading)
                     }
-                    .frame(height: 340)   // match System & Network height
+                    .frame(height: 375)   // match System & Network height
                     .foregroundStyle(.primary)
                 }
             }
             .padding()
+        }
+        .alert("Delete BackgroundProcessing DB?", isPresented: $showDeleteBackgroundDBConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                diskMonitor.deleteBackgroundDB()
+            }
+        } message: {
+            Text("This will permanently delete CurrentBackgroundProcessingDB.BGSQL. This cannot be undone.")
+        }
+        .alert("Couldn't Delete File", isPresented: Binding(
+            get: { diskMonitor.deleteBackgroundDBErrorMessage != nil },
+            set: { if !$0 { diskMonitor.deleteBackgroundDBErrorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(diskMonitor.deleteBackgroundDBErrorMessage ?? "")
         }
     }
 

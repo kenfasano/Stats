@@ -21,17 +21,67 @@ struct DiskVolume: Identifiable {
 class DiskMonitor: ObservableObject {
     @Published var volumes: [DiskVolume] = []
     @Published var uptime: String = "0h 0m"
-    
+    @Published var backgroundDBSizeString: String = "—"
+    @Published var deleteBackgroundDBErrorMessage: String? = nil
+
+    private let backgroundDBPath = "/private/var/db/powerlog/Library/PerfPowerTelemetry/BackgroundProcessing/CurrentBackgroundProcessingDB.BGSQL"
+
     init() {
         updateDisks()
         updateUptime()
-        
+        updateBackgroundDBSize()
+
         Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
             self.updateDisks()
             self.updateUptime()
         }
+
+        Timer.scheduledTimer(withTimeInterval: 300.0, repeats: true) { _ in
+            self.updateBackgroundDBSize()
+        }
+    }
+
+    private func updateBackgroundDBSize() {
+        let attributes = try? FileManager.default.attributesOfItem(atPath: backgroundDBPath)
+        let size = attributes?[.size] as? Int64
+
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+
+        DispatchQueue.main.async {
+            self.backgroundDBSizeString = size.flatMap { formatter.string(from: NSNumber(value: $0)) } ?? "—"
+        }
     }
     
+    func deleteBackgroundDB() {
+        do {
+            try FileManager.default.removeItem(atPath: backgroundDBPath)
+            updateBackgroundDBSize()
+        } catch {
+            deleteBackgroundDBWithElevatedPrivileges()
+        }
+    }
+
+    private func deleteBackgroundDBWithElevatedPrivileges() {
+        let path = backgroundDBPath
+        DispatchQueue.global(qos: .userInitiated).async {
+            let script = "do shell script \"rm -f '\(path)'\" with administrator privileges"
+            var errorDict: NSDictionary?
+            NSAppleScript(source: script)?.executeAndReturnError(&errorDict)
+
+            DispatchQueue.main.async {
+                if let errorDict = errorDict {
+                    let errorNumber = errorDict[NSAppleScript.errorNumber] as? Int ?? 0
+                    if errorNumber != -128 { // -128 = user cancelled the auth prompt
+                        self.deleteBackgroundDBErrorMessage = errorDict[NSAppleScript.errorMessage] as? String ?? "Failed to delete file."
+                    }
+                } else {
+                    self.updateBackgroundDBSize()
+                }
+            }
+        }
+    }
+
     private func updateUptime() {
         var boottime = timeval()
         var size = MemoryLayout<timeval>.size
