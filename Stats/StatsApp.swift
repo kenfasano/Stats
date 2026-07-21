@@ -12,7 +12,7 @@ struct SystemStatusApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(width: 980, height: 980)  // tune to taste
+                .frame(width: 980, height: 1010)  // capped to fit on screen; grid scrolls internally if content is taller
                 // This puts the "Frosted Glass" effect behind your app
                 .background(VisualEffectView().ignoresSafeArea())
         }

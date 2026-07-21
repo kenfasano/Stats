@@ -41,6 +41,7 @@ struct ContentView: View {
             .gesture(WindowDragGesture())
 
             // --- Main Grid ---
+            ScrollView {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 15) {
 
                 // 1. CPU Card
@@ -180,7 +181,7 @@ struct ContentView: View {
 
                         Spacer(minLength: 0)
                     }
-                    .frame(height: 375)   // slightly taller to fit Claude rows
+                    .frame(height: 550)   // slightly taller to fit Claude rows
                     .foregroundStyle(.primary)
                 }
 
@@ -197,6 +198,7 @@ struct ContentView: View {
                 }
             }
             .padding()
+            }
         }
         .alert("Delete BackgroundProcessing DB?", isPresented: $showDeleteBackgroundDBConfirmation) {
             Button("Cancel", role: .cancel) {}
@@ -245,6 +247,7 @@ struct ContentView: View {
                     .frame(minHeight: 100)
             }
             .padding()
+            .frame(maxHeight: .infinity, alignment: .top)
             .background(
                 ZStack {
                     RoundedRectangle(cornerRadius: 12).fill(.ultraThinMaterial)
