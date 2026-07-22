@@ -8,10 +8,17 @@
 import Foundation
 import Combine
 
+struct TopProcess: Identifiable {
+    let id = UUID()
+    let name: String
+    let cpu: Double
+}
+
 class ProcessMonitor: ObservableObject {
     @Published var topProcessName: String = "Loading..."
     @Published var topProcessCPU: Double = 0.0
-    
+    @Published var topProcesses: [TopProcess] = []
+
     private var timer: Timer?
     
     init() {
@@ -48,22 +55,25 @@ class ProcessMonitor: ObservableObject {
     
     private func parseProcessOutput(_ output: String) {
         let lines = output.components(separatedBy: .newlines)
-        // Line 0 is headers, Line 1 is the top process
-        if lines.count > 1 {
-            let topLine = lines[1].trimmingCharacters(in: .whitespaces)
-            let components = topLine.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
-            
-            if components.count >= 2 {
-                // First component is CPU (e.g., "12.5"), rest is Name (e.g., "WindowServer")
-                if let cpuVal = Double(components[0]) {
-                    let name = components.dropFirst().joined(separator: " ")
-                    
-                    DispatchQueue.main.async {
-                        self.topProcessCPU = cpuVal
-                        self.topProcessName = name
-                    }
-                }
-            }
+        // Line 0 is headers, Line 1+ are processes sorted by CPU descending
+        guard lines.count > 1 else { return }
+
+        var parsed: [TopProcess] = []
+        for line in lines.dropFirst() {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { continue }
+            let components = trimmed.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+            guard components.count >= 2, let cpuVal = Double(components[0]) else { continue }
+            let name = components.dropFirst().joined(separator: " ")
+            parsed.append(TopProcess(name: name, cpu: cpuVal))
+            if parsed.count == 4 { break }
+        }
+
+        guard let top = parsed.first else { return }
+        DispatchQueue.main.async {
+            self.topProcessCPU = top.cpu
+            self.topProcessName = top.name
+            self.topProcesses = parsed
         }
     }
     
