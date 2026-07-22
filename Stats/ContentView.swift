@@ -22,6 +22,7 @@ struct ContentView: View {
 
     @State private var showDeleteBackgroundDBConfirmation = false
     @State private var gpuPanelStatsHeight: CGFloat = 100
+    @State private var dragStartOrigin: CGPoint?
 
     private struct HeightPreferenceKey: PreferenceKey {
         static var defaultValue: CGFloat = 0
@@ -49,7 +50,23 @@ struct ContentView: View {
             .padding(.top, 7)
             .padding(.bottom, 0)
             .contentShape(Rectangle())
-            .gesture(WindowDragGesture())
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        guard let window = NSApp.windows.first else { return }
+                        if dragStartOrigin == nil {
+                            dragStartOrigin = window.frame.origin
+                        }
+                        guard let start = dragStartOrigin else { return }
+                        window.setFrameOrigin(NSPoint(
+                            x: start.x + value.translation.width,
+                            y: start.y - value.translation.height
+                        ))
+                    }
+                    .onEnded { _ in
+                        dragStartOrigin = nil
+                    }
+            )
 
             // --- Main Grid ---
             ScrollView {
@@ -102,7 +119,7 @@ struct ContentView: View {
                 .frame(height: kPanelHeight)
 
                 // 2. GPU Card
-                MetricCard(title: "GPU & System", value: gpuMonitor.gpuUsage, unit: "%", color: .green,
+                MetricCard(title: "GPU, System, and Disk", value: gpuMonitor.gpuUsage, unit: "%", color: .green,
                            trailingHeader: {
                     AnyView(
                         HStack(spacing: 5) {
@@ -124,6 +141,7 @@ struct ContentView: View {
                         }
                     )
                 }) {
+                    VStack(alignment: .leading, spacing: 4) {
                     HStack(alignment: .top, spacing: 12) {
                         Chart(Array(gpuMonitor.gpuHistory.enumerated()), id: \.offset) { index, value in
                             AreaMark(x: .value("Time", index), y: .value("Usage", value))
@@ -161,6 +179,60 @@ struct ContentView: View {
                     }
                     .onPreferenceChange(HeightPreferenceKey.self) { newHeight in
                         gpuPanelStatsHeight = newHeight
+                    }
+
+                    Divider().padding(.vertical, 4)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        if diskMonitor.volumes.count > 1 {
+                            MultiDiskStackedBar(volumes: diskMonitor.volumes)
+                        }
+
+                        ForEach(diskMonitor.volumes) { volume in
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text(volume.name).font(.subheadline).bold()
+                                    Spacer()
+                                    Text(volume.statusString)
+                                        .font(kMonoFont)
+                                        .foregroundStyle(.primary)
+                                }
+                                ProgressView(value: 100 - volume.availablePercent, total: 100).tint(.purple)
+
+                                if volume.name == "Internal" {
+                                    VStack(spacing: 3) {
+                                        DiskStatRow(label: "Read", value: String(format: "%.0f MB/s", diskMonitor.readMBps))
+                                        DiskStatRow(label: "Write", value: String(format: "%.0f MB/s", diskMonitor.writeMBps))
+                                        DiskStatRow(label: "IOPS", value: diskMonitor.iops.formatted())
+                                        DiskStatRow(label: "SMART", value: diskMonitor.smartStatus,
+                                                    valueColor: diskMonitor.smartStatus == "Verified" ? .green : .red)
+                                        DiskStatRow(label: "TRIM", value: diskMonitor.trimEnabled ? "Enabled" : "Disabled")
+                                    }
+                                    .padding(.top, 4)
+                                }
+                            }
+                        }
+
+                        VStack(alignment: .trailing, spacing: 4) {
+                            HStack {
+                                Label("BackgroundProcessing DB", systemImage: "cylinder.split.1x2")
+                                    .font(kCaptionFont).foregroundStyle(.primary)
+                                Spacer()
+                                Text(diskMonitor.backgroundDBSizeString).font(kMonoFont)
+                            }
+                            Button(role: .destructive) {
+                                showDeleteBackgroundDBConfirmation = true
+                            } label: {
+                                Text("Delete File")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .padding(.horizontal, 4)
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(.red)
+                            .controlSize(.large)
+                            .offset(x: 6, y: 8)
+                        }
+                    }
                     }
                 }
                 .frame(height: kPanelHeight)
@@ -228,38 +300,6 @@ struct ContentView: View {
                 MetricCard(title: "System & Network", value: 0, unit: "", color: .primary) {
                     VStack(alignment: .leading, spacing: 12) {
 
-                        // --- Disk volumes ---
-                        if diskMonitor.volumes.count > 1 {
-                            MultiDiskStackedBar(volumes: diskMonitor.volumes)
-                        }
-
-                        ForEach(diskMonitor.volumes) { volume in
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack {
-                                    Text(volume.name).font(.subheadline).bold()
-                                    Spacer()
-                                    Text(volume.statusString)
-                                        .font(kMonoFont)
-                                        .foregroundStyle(.primary)
-                                }
-                                ProgressView(value: 100 - volume.availablePercent, total: 100).tint(.purple)
-
-                                if volume.name == "Internal" {
-                                    VStack(spacing: 3) {
-                                        DiskStatRow(label: "Read", value: String(format: "%.0f MB/s", diskMonitor.readMBps))
-                                        DiskStatRow(label: "Write", value: String(format: "%.0f MB/s", diskMonitor.writeMBps))
-                                        DiskStatRow(label: "IOPS", value: diskMonitor.iops.formatted())
-                                        DiskStatRow(label: "SMART", value: diskMonitor.smartStatus,
-                                                    valueColor: diskMonitor.smartStatus == "Verified" ? .green : .red)
-                                        DiskStatRow(label: "TRIM", value: diskMonitor.trimEnabled ? "Enabled" : "Disabled")
-                                    }
-                                    .padding(.top, 4)
-                                }
-                            }
-                        }
-
-                        Divider().padding(.vertical, 4)
-
                         // --- Network info ---
                         HStack {
                             Label("Wi-Fi Status", systemImage: "wifi")
@@ -282,25 +322,6 @@ struct ContentView: View {
                                     .font(kCaptionFont).foregroundStyle(.primary)
                                 Spacer()
                                 Text(diskMonitor.uptime).font(kMonoFont)
-                            }
-                            VStack(alignment: .trailing, spacing: 4) {
-                                HStack {
-                                    Label("BackgroundProcessing DB", systemImage: "cylinder.split.1x2")
-                                        .font(kCaptionFont).foregroundStyle(.primary)
-                                    Spacer()
-                                    Text(diskMonitor.backgroundDBSizeString).font(kMonoFont)
-                                }
-                                Button(role: .destructive) {
-                                    showDeleteBackgroundDBConfirmation = true
-                                } label: {
-                                    Text("Delete File")
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .padding(.horizontal, 4)
-                                }
-                                .buttonStyle(.bordered)
-                                .tint(.red)
-                                .controlSize(.large)
-                                .offset(x: 6, y: 8)
                             }
                         }
 
@@ -584,18 +605,6 @@ struct ContentView: View {
                         .padding(.horizontal)
                         .padding(.bottom, 12)
                 }
-            }
-        }
-    }
-
-    struct WindowDragGesture: Gesture {
-        var body: some Gesture {
-            DragGesture().onChanged { gesture in
-                guard let window = NSApp.windows.first else { return }
-                window.setFrameOrigin(NSPoint(
-                    x: window.frame.origin.x + gesture.translation.width,
-                    y: window.frame.origin.y + gesture.translation.height
-                ))
             }
         }
     }
