@@ -293,44 +293,10 @@ struct ContentView: View {
                 .frame(height: kPanelHeight)
 
                 // 4. Network Card
-                NetworkCard(monitor: networkMonitor)
+                NetworkCard(monitor: networkMonitor, uptime: diskMonitor.uptime)
                     .frame(height: kPanelHeight)
 
-                // 5. System & Network Card
-                MetricCard(title: "System & Network", value: 0, unit: "", color: .primary) {
-                    VStack(alignment: .leading, spacing: 12) {
-
-                        // --- Network info ---
-                        HStack {
-                            Label("Wi-Fi Status", systemImage: "wifi")
-                                .font(kCaptionFont).foregroundStyle(.primary)
-                            Spacer()
-                            Text("On (\(networkMonitor.wifiRSSI)dBm: \(wifiQuality(rssi: networkMonitor.wifiRSSI)) @ \(Int(networkMonitor.wifiTransmitRate).formatted())Mbps)")
-                                .font(kMonoFont)
-                                .foregroundStyle(.primary)
-                        }
-
-                        VStack(spacing: 8) {
-                            HStack {
-                                Label("Local IP", systemImage: "network")
-                                    .font(kCaptionFont).foregroundStyle(.primary)
-                                Spacer()
-                                Text(networkMonitor.localIP).font(kMonoFont)
-                            }
-                            HStack {
-                                Label("Uptime", systemImage: "clock")
-                                    .font(kCaptionFont).foregroundStyle(.primary)
-                                Spacer()
-                                Text(diskMonitor.uptime).font(kMonoFont)
-                            }
-                        }
-
-                    }
-                    .foregroundStyle(.primary)
-                }
-                .frame(height: kPanelHeight)
-
-                // 6. ScreenArt Card
+                // 5. ScreenArt Card
                 MetricCard(title: "ScreenArt", value: 0, unit: "", color: .clear) {
                     ScrollView {
                         Text(screenArtMonitor.content)
@@ -509,6 +475,7 @@ struct ContentView: View {
 
     struct NetworkCard: View {
         @ObservedObject var monitor: NetworkMonitor
+        let uptime: String
 
         let formatter: ByteCountFormatter = {
             let f = ByteCountFormatter()
@@ -600,6 +567,32 @@ struct ContentView: View {
 
                     Divider().padding(.vertical, 4)
 
+                    VStack(spacing: 8) {
+                        HStack {
+                            Label("Wi-Fi Status", systemImage: "wifi")
+                                .font(kCaptionFont).foregroundStyle(.primary)
+                            Spacer()
+                            Text("On (\(monitor.wifiRSSI)dBm: \(wifiQuality(rssi: monitor.wifiRSSI)) @ \(Int(monitor.wifiTransmitRate).formatted())Mbps)")
+                                .font(kMonoFont)
+                                .foregroundStyle(.primary)
+                        }
+                        HStack {
+                            Label("Local IP", systemImage: "network")
+                                .font(kCaptionFont).foregroundStyle(.primary)
+                            Spacer()
+                            Text(monitor.localIP).font(kMonoFont)
+                        }
+                        HStack {
+                            Label("Uptime", systemImage: "clock")
+                                .font(kCaptionFont).foregroundStyle(.primary)
+                            Spacer()
+                            Text(uptime).font(kMonoFont)
+                        }
+                    }
+                    .padding(.horizontal)
+
+                    Divider().padding(.vertical, 4)
+
                     DiskStatRow(label: "Packet Loss", value: String(format: "%.1f%%", monitor.packetLossPercent),
                                 valueColor: monitor.packetLossPercent > 1 ? .red : .primary)
                         .padding(.horizontal)
@@ -615,13 +608,14 @@ struct ContentView: View {
         else { return .green }
     }
 
-    func wifiQuality(rssi: Int) -> String {
-        switch rssi {
-        case -50...0:   return "Excellent"
-        case -67 ..< -50: return "Good"
-        case -80 ..< -67: return "Fair"
-        case -90 ..< -80: return "Poor"
-        default:           return "Unusable"
-        }
+}
+
+private func wifiQuality(rssi: Int) -> String {
+    switch rssi {
+    case -50...0:   return "Excellent"
+    case -67 ..< -50: return "Good"
+    case -80 ..< -67: return "Fair"
+    case -90 ..< -80: return "Poor"
+    default:           return "Unusable"
     }
 }
