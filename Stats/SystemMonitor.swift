@@ -147,7 +147,9 @@ class SystemMonitor: ObservableObject {
             let swapUsed   = Self.getSwapUsedGB()
 
             let appMemory = active + wired
-            let usedTotal = appMemory + compressed + inactive
+            // Matches Activity Monitor's "Memory Used": App + Wired + Compressed.
+            // Inactive memory is reclaimable disk cache, not real pressure — shown separately below.
+            let usedTotal = appMemory + compressed
 
             let newSegments = [
                 RAMSegment(type: "App", value: appMemory, color: .blue),
